@@ -1,0 +1,139 @@
+---
+title: "ML Student Math Decision Tree"
+author: "Rhea Hau"
+date: '2022-06-13'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+```{Installeer eerst readr om CSV te kunnen lezen}
+install.packages("readr")
+```
+
+```{CSV inladen}
+library(readr)
+student_math <- read.csv(file = 'student-mat.csv', sep = ";", header = TRUE)
+student_math <- read.csv("student-mat.csv", sep = ";", header = TRUE)
+```
+
+```{Structuur inkijken, welke levels en type die zijn}
+str(student_math)
+```
+
+dplyr
+This is a shortcut for x >= left & x <= right, implemented efficiently in C++ for local values, and translated to the appropriate SQL for remote tables.
+
+rpart.plot
+rpart.plot: Plot an rpart model. A simplified interface to the prp function.
+
+```{Libraties installeren}
+install.packages('dplyr')
+install.packages("rpart.plot")
+install.packages("magrittr")
+```
+
+The magrittr package offers a set of operators which make your code more readable by:
+
+- structuring sequences of data operations left-to-right (as opposed to from the inside and out),
+- avoiding nested function calls,
+- minimizing the need for local variables and function definitions, and
+- making it easy to add steps anywhere in the sequence of operations.
+
+```{Libraties inladen}
+library(dplyr)
+library(magrittr) # %>%
+library('rpart')
+library('rpart.plot')
+```
+
+```{Trainset en Test aanmaken}
+create_train_test <- function(df, size = 0.8, train = TRUE) {
+    n_row = nrow(df)
+    total_row = size * n_row
+    train_sample <- 1: total_row
+    if (train == TRUE) {
+        return (df[train_sample, ])
+    } else {
+        return (df[-train_sample, ])
+    }
+}
+```
+
+```{Trainset en testset indelen}
+data_train <- create_train_test(df, 0.8, train = TRUE)
+data_test <- create_train_test(df, 0.8, train = FALSE)
+```
+
+```{dimensie laten zien, hoeveel rijen en kolommen er zijn}
+dim(data_train)
+dim(data_test)
+```
+
+The prop.table() function in R can be used to calculate the value of each cell in a table as a proportion of all values.
+
+```{Overzicht hoeveel values per categorie inzit, in dit geval G3}
+prop.table(table(data_train$G3))
+```
+
+```{rpart plotten met G3 values. 104 is omdat er meerdere levels zijn}
+fit <- rpart(G3~., data = data_train, method = 'class')
+rpart.plot(fit, extra = 104)
+```
+
+```{Hardcode manier om elke nummerieke te vrebinden met een level}
+clean_df <- df %>% mutate(G3 = factor(G3, levels = c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20), labels = c('fail', 'fail', 'fail', 'fail', 'fail', 'fail', 'fail', 'fail', 'fail', 'sufficient', 'sufficient', 'satisfactory', 'satisfactory', 'good', 'good', 'excellent', 'excellent', 'excellent', 'excellent', 'excellent'))) %>% na.omit()
+```
+
+```{Voorproefje om te kijken combine function uberhaupt de range pakt}
+levels = c(1:9, 10:11, 12:13, 14:15, 16:20)
+levels
+```
+
+The tidyverse package actually contains other packages (dplyr, ggplot2, etc.)
+
+```{r}
+library(tidyverse)
+
+temp <- c(1:9, 10:11, 12:13, 14:15, 16:20)
+
+tab <- data.frame(
+  temp = temp
+)
+
+tab <- tab %>% 
+  mutate(
+    case = case_when(
+      temp <= 9 ~ "fail",
+      between(temp, 10, 11) ~ "sufficient",
+      between(temp, 12, 13) ~ "satisfactory",
+      between(temp, 14, 15) ~ "good",
+      temp >= 16 ~ "excellent"
+    )
+  )
+
+tab$case <- factor(tab$case)
+tab$case
+```
