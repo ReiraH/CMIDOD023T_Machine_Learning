@@ -1,7 +1,7 @@
 ---
-title: "ML Student Math Decision Tree"
+title: "Code om te testen"
 author: "Rhea Hau"
-date: '2022-06-13'
+date: '2022-06-15'
 output: html_document
 ---
 
@@ -30,30 +30,35 @@ plot(pressure)
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
 
 #### Installeer eerst readr om CSV te kunnen lezen
+
 ```{r}
 install.packages("readr")
 ```
 
 #### CSV inladen
+
 ```{r}
 library(readr)
 
 student_math <- read.csv(file = "student-mat.csv", header = TRUE, sep = ";")
 ```
 
-
 #### Structuur inkijken, welke levels en type die zijn
+
 ```{r}
 str(student_math)
 ```
 
 ##### dplyr
-This is a shortcut for x >= left & x <= right, implemented efficiently in C++ for local values, and translated to the appropriate SQL for remote tables.
+
+This is a shortcut for x \>= left & x \<= right, implemented efficiently in C++ for local values, and translated to the appropriate SQL for remote tables.
 
 ##### rpart.plot
+
 rpart.plot: Plot an rpart model. A simplified interface to the prp function.
 
 #### Libraties installeren
+
 ```{r}
 install.packages('dplyr')
 install.packages("rpart.plot")
@@ -64,12 +69,13 @@ install.packages("magrittr")
 
 The magrittr package offers a set of operators which make your code more readable by:
 
-- structuring sequences of data operations left-to-right (as opposed to from the inside and out),
-- avoiding nested function calls,
-- minimizing the need for local variables and function definitions, and
-- making it easy to add steps anywhere in the sequence of operations.
+-   structuring sequences of data operations left-to-right (as opposed to from the inside and out),
+-   avoiding nested function calls,
+-   minimizing the need for local variables and function definitions, and
+-   making it easy to add steps anywhere in the sequence of operations.
 
 #### Libraties inladen
+
 ```{r}
 library(dplyr)
 library(magrittr) # %>%
@@ -77,8 +83,8 @@ library('rpart')
 library('rpart.plot')
 ```
 
-
 #### Trainset en Test aanmaken
+
 ```{r}
 create_train_test <- function(student_math, size = 0.8, train = TRUE) {
     n_row = nrow(student_math)
@@ -93,23 +99,76 @@ create_train_test <- function(student_math, size = 0.8, train = TRUE) {
 ```
 
 #### Trainset en testset indelen
+
 ```{r}
 data_train <- create_train_test(student_math, 0.8, train = TRUE)
 data_test <- create_train_test(student_math, 0.8, train = FALSE)
 ```
 
 #### Dimensie laten zien, hoeveel rijen en kolommen er zijn
+
 ```{r}
 dim(data_train)
 dim(data_test)
 ```
 
 ##### prop.table()
+
 The prop.table() function in R can be used to calculate the value of each cell in a table as a proportion of all values.
 
 ### Overzicht hoeveel values per categorie inzit, in dit geval G3
+
 ```{r}
 prop.table(table(data_train$G3))
+```
+
+#### rpart plotten met G3 values. 104 is omdat er meerdere levels zijn
+
+```{r}
+fit <- rpart(G3~., data = data_train, method = 'class')
+rpart.plot(fit)
+```
+
+#### Hardcode manier om elke nummerieke te vrebinden met een level
+
+```{r}
+clean_df <- student_math %>% mutate(G3 = factor(G3, levels = c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20), labels = c('fail', 'fail', 'fail', 'fail', 'fail', 'fail', 'fail', 'fail', 'fail', 'sufficient', 'sufficient', 'satisfactory', 'satisfactory', 'good', 'good', 'excellent', 'excellent', 'excellent', 'excellent', 'excellent'))) %>% na.omit()
+glimpse(clean_df)
+```
+
+#### Voorproefje om te kijken combine function uberhaupt de range pakt
+
+```{r}
+levels = c(1:9, 10:11, 12:13, 14:15, 16:20)
+levels
+```
+
+##### tidyverse
+
+The tidyverse package actually contains other packages (dplyr, ggplot2, etc.)
+
+```{r}
+library(tidyverse)
+
+temp <- c(1:9, 10:11, 12:13, 14:15, 16:20)
+
+tab <- data.frame(
+  temp = temp
+)
+
+tab <- tab %>% 
+  mutate(
+    case = case_when(
+      temp <= 9 ~ "fail",
+      between(temp, 10, 11) ~ "sufficient",
+      between(temp, 12, 13) ~ "satisfactory",
+      between(temp, 14, 15) ~ "good",
+      temp >= 16 ~ "excellent"
+    )
+  )
+
+tab$case <- factor(tab$case)
+tab$case
 ```
 
 ```{r}
@@ -125,8 +184,59 @@ glimpse(clean_df)
 ```
 
 #### Plot geselecteerden in Decision Tree
+
 ```{r}
 fit <- rpart(G3~., data = clean_df, method = 'class')
 rpart.plot(fit)
+```
+
+```{r}
+install.packages("DataExplorer")
+library(DataExplorer)
+```
+
+```{r}
+create_report(student_math)
+```
+
+```{r}
+#install.packages("GGally")
+library(GGally)
+
+# change plot size (optional)
+options(repr.plot.width = 20, repr.plot.height = 10)
+
+clean_df %>% 
+  select("age", "famsize", "reason", "Pstatus") %>%
+  ggpairs(mapping = aes(color = clean_df$G2, alpha = 0.5))
+```
+```{r}
+plot_histogram(clean_df$age)
+```
+
+```{r}
+plot_prcomp(clean_df$G3, maxcat = 5L)
+```
+
+```{r}
+plot_bar(student_math$G1)
+plot_bar(student_math$G1)
+```
+```{r}
+install.packages('plotly')
+```
+
+```{r}
+library(ggplot2)
+library(plotly)
+library(gapminder)
+
+p <- gapminder %>%
+  filter(year==1977) %>%
+  ggplot( aes(gdpPercap, lifeExp, size = pop, color=continent)) +
+  geom_point() +
+  theme_bw()
+
+ggplotly(p)
 ```
 
